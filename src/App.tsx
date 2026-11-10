@@ -512,7 +512,6 @@ export default function App() {
             onPanelTextChange={handleMatrixTextChange}
             onPanelLangChange={handleMatrixLangChange}
             onClearPanel={handleClearMatrixPanel}
-            onSwapPanels={handleSwapPanels}
             isTranslating={isTranslating}
             activeSourceId={activeSourceId}
             fontSize={fontSize}

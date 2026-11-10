@@ -4,7 +4,6 @@ import {
   Copy,
   Check,
   Trash2,
-  ArrowRightLeft,
   Sparkles,
   BookOpen,
   Info,
@@ -29,7 +28,7 @@ interface InteractiveMatrixProps {
   onPanelTextChange: (id: number, newText: string) => void;
   onPanelLangChange: (id: number, newLang: string) => void;
   onClearPanel: (id: number) => void;
-  onSwapPanels: (idA: number, idB: number) => void;
+  onSwapPanels?: (idA: number, idB: number) => void;
   isTranslating: boolean;
   activeSourceId: number | null;
   fontSize: number;
@@ -41,7 +40,6 @@ export const InteractiveMatrix: React.FC<InteractiveMatrixProps> = ({
   onPanelTextChange,
   onPanelLangChange,
   onClearPanel,
-  onSwapPanels,
   isTranslating,
   activeSourceId,
   fontSize,
@@ -207,31 +205,8 @@ export const InteractiveMatrix: React.FC<InteractiveMatrixProps> = ({
   return (
     <div className="flex flex-col gap-6 flex-1">
       {/* Top: Panel 1 (Master / Primary Input) */}
-      <div className="relative">
+      <div>
         {panel1 && renderPanel(panel1, true)}
-
-        {/* Swap buttons between top and bottom panels */}
-        <div className="flex justify-center -my-3 relative z-10">
-          <div className="flex items-center space-x-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full p-1 shadow-sm">
-            <button
-              onClick={() => onSwapPanels(1, 2)}
-              title="Swap Panel 1 & Panel 2"
-              className="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition flex items-center space-x-1"
-            >
-              <ArrowRightLeft className="w-3 h-3 text-indigo-500" />
-              <span>Swap 1 & 2</span>
-            </button>
-            <div className="w-px h-3 bg-slate-200 dark:border-slate-800" />
-            <button
-              onClick={() => onSwapPanels(1, 3)}
-              title="Swap Panel 1 & Panel 3"
-              className="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition flex items-center space-x-1"
-            >
-              <ArrowRightLeft className="w-3 h-3 text-rose-500" />
-              <span>Swap 1 & 3</span>
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Bottom Row: Panel 2 & Panel 3 (Side-by-Side) */}
