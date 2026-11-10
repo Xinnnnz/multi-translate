@@ -6,12 +6,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Header } from './components/Header';
 import { InteractiveMatrix, PanelState } from './components/InteractiveMatrix';
-import { MultiTargetStudio } from './components/MultiTargetStudio';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { VocabularyModal } from './components/VocabularyModal';
 import { ExportModal } from './components/ExportModal';
 import { HelpModal } from './components/HelpModal';
-import { PRESET_PHRASES, SUPPORTED_LANGUAGES } from './languages';
+import { SUPPORTED_LANGUAGES } from './languages';
 import {
   HistoryItem,
   TranslationResponse,
@@ -46,8 +45,7 @@ export default function App() {
     }
   }, [isDark]);
 
-  // Mode & Configuration
-  const [mode, setMode] = useState<'matrix' | 'studio'>('matrix');
+  // Configuration
   const [tone, setTone] = useState<TranslationTone>('natural');
   const [fontSize, setFontSize] = useState<number>(16);
 
@@ -113,12 +111,6 @@ export default function App() {
     },
   ]);
 
-  // Studio Mode State
-  const [studioSourceLang, setStudioSourceLang] = useState<string>('sv');
-  const [studioSourceText, setStudioSourceText] = useState<string>('');
-  const [studioTargetLangs, setStudioTargetLangs] = useState<string[]>(['en', 'zh', 'es']);
-  const [studioResults, setStudioResults] = useState<Record<string, TranslationResult>>({});
-  const [studioDetectedSource, setStudioDetectedSource] = useState<string | undefined>();
 
   // Translation Debounce Ref
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -289,147 +281,44 @@ export default function App() {
     });
   };
 
-  // Apply Preset
-  const handleApplyPreset = (text: string, langCode: string) => {
-    if (mode === 'matrix') {
-      // Put in Panel 1
-      setMatrixPanels((prev) =>
-        prev.map((p) => (p.id === 1 ? { ...p, lang: langCode, text } : p))
-      );
-      handleMatrixTextChange(1, text);
-    } else {
-      setStudioSourceLang(langCode);
-      setStudioSourceText(text);
-      performTranslation(text, langCode, studioTargetLangs, (data) => {
-        const resultMap: Record<string, TranslationResult> = {};
-        data.results.forEach((r) => {
-          resultMap[r.targetLang] = r;
-        });
-        setStudioResults(resultMap);
-        setStudioDetectedSource(data.detectedSourceLang);
-      });
-    }
-  };
-
-  // Studio Mode Handlers
-  const handleStudioTranslate = () => {
-    if (!studioSourceText.trim()) return;
-    performTranslation(studioSourceText, studioSourceLang, studioTargetLangs, (data) => {
-      const resultMap: Record<string, TranslationResult> = {};
-      data.results.forEach((r) => {
-        resultMap[r.targetLang] = r;
-      });
-      setStudioResults(resultMap);
-      setStudioDetectedSource(data.detectedSourceLang);
-    });
-  };
-
-  const handleStudioAddTarget = (langCode: string) => {
-    if (!studioTargetLangs.includes(langCode)) {
-      const updated = [...studioTargetLangs, langCode];
-      setStudioTargetLangs(updated);
-      if (studioSourceText.trim()) {
-        performTranslation(studioSourceText, studioSourceLang, updated, (data) => {
-          const resultMap: Record<string, TranslationResult> = {};
-          data.results.forEach((r) => {
-            resultMap[r.targetLang] = r;
-          });
-          setStudioResults(resultMap);
-        });
-      }
-    }
-  };
-
-  const handleStudioRemoveTarget = (langCode: string) => {
-    setStudioTargetLangs((prev) => prev.filter((l) => l !== langCode));
-  };
-
-  const handleStudioTargetChange = (oldCode: string, newCode: string) => {
-    const updated = studioTargetLangs.map((c) => (c === oldCode ? newCode : c));
-    setStudioTargetLangs(updated);
-    if (studioSourceText.trim()) {
-      performTranslation(studioSourceText, studioSourceLang, updated, (data) => {
-        const resultMap: Record<string, TranslationResult> = {};
-        data.results.forEach((r) => {
-          resultMap[r.targetLang] = r;
-        });
-        setStudioResults(resultMap);
-      });
-    }
-  };
-
   // Restore history item
   const handleRestoreHistory = (item: HistoryItem) => {
-    if (mode === 'matrix') {
-      // Put source into Panel 1
-      setMatrixPanels((prev) =>
-        prev.map((p, idx) => {
-          if (idx === 0) {
-            return { ...p, lang: item.sourceLang, text: item.sourceText };
-          }
-          const target = item.targets[idx - 1];
-          if (target) {
-            return {
-              ...p,
-              lang: target.lang,
-              text: target.text,
-              romanization: target.romanization,
-            };
-          }
-          return p;
-        })
-      );
-    } else {
-      setStudioSourceLang(item.sourceLang);
-      setStudioSourceText(item.sourceText);
-      const targetCodes = item.targets.map((t) => t.lang);
-      setStudioTargetLangs(targetCodes);
-      const resMap: Record<string, TranslationResult> = {};
-      item.targets.forEach((t) => {
-        resMap[t.lang] = {
-          targetLang: t.lang,
-          targetLangName: t.langName,
-          translatedText: t.text,
-          romanization: t.romanization,
-        };
-      });
-      setStudioResults(resMap);
-    }
+    setMatrixPanels((prev) =>
+      prev.map((p, idx) => {
+        if (idx === 0) {
+          return { ...p, lang: item.sourceLang, text: item.sourceText };
+        }
+        const target = item.targets[idx - 1];
+        if (target) {
+          return {
+            ...p,
+            lang: target.lang,
+            text: target.text,
+            romanization: target.romanization,
+          };
+        }
+        return p;
+      })
+    );
     setIsHistoryOpen(false);
   };
 
-  // Trigger initial preset on first launch if empty
-  useEffect(() => {
-    if (!matrixPanels[0].text) {
-      const initialPreset = PRESET_PHRASES[0];
-      handleApplyPreset(initialPreset.text, initialPreset.lang);
-    }
-  }, []);
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
       {/* Top Header */}
       <Header
-        mode={mode}
-        onModeChange={setMode}
         tone={tone}
         onToneChange={(newTone) => {
           setTone(newTone);
-          // Retranslate active text if available
-          if (mode === 'matrix') {
-            const active = matrixPanels.find((p) => p.text.trim());
-            if (active) handleMatrixTextChange(active.id, active.text);
-          } else if (studioSourceText.trim()) {
-            handleStudioTranslate();
-          }
+          const active = matrixPanels.find((p) => p.text.trim());
+          if (active) handleMatrixTextChange(active.id, active.text);
         }}
         fontSize={fontSize}
         onFontSizeChange={(delta) => setFontSize((prev) => Math.min(24, Math.max(13, prev + delta)))}
         historyCount={history.length}
         onOpenHistory={() => setIsHistoryOpen(true)}
         onExport={() => setIsExportOpen(true)}
-        isDark={isDark}
-        onToggleDark={() => setIsDark((prev) => !prev)}
         onOpenHelp={() => setIsHelpOpen(true)}
       />
 
@@ -449,12 +338,8 @@ export default function App() {
               <button
                 onClick={() => {
                   setErrorMessage(null);
-                  if (mode === 'matrix') {
-                    const active = matrixPanels.find((p) => p.text.trim());
-                    if (active) handleMatrixTextChange(active.id, active.text);
-                  } else if (studioSourceText.trim()) {
-                    handleStudioTranslate();
-                  }
+                  const active = matrixPanels.find((p) => p.text.trim());
+                  if (active) handleMatrixTextChange(active.id, active.text);
                 }}
                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium shadow-xs transition flex items-center space-x-1"
               >
@@ -471,78 +356,36 @@ export default function App() {
           </div>
         )}
 
-        {/* Presets and Status Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-          {/* Preset Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1 hidden sm:inline-block">
-              Presets:
-            </span>
-            {PRESET_PHRASES.map((preset, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleApplyPreset(preset.text, preset.lang)}
-                className="px-3 py-1 text-xs rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/80 dark:border-slate-700/80 transition font-medium"
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Model Latency & Engine info */}
-          <div className="flex items-center space-x-2 text-xs text-slate-400 ml-auto">
+        {/* Active translation status */}
+        {(isTranslating || latencyMs !== null) && (
+          <div className="flex items-center justify-end px-2 -mb-2">
             {isTranslating ? (
-              <span className="flex items-center space-x-1.5 text-indigo-500 font-medium">
+              <span className="flex items-center space-x-1.5 text-xs text-indigo-500 font-medium">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                 <span>Translating with Gemini...</span>
               </span>
             ) : latencyMs !== null ? (
-              <span className="flex items-center space-x-1 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+              <span className="flex items-center space-x-1 text-slate-400 font-mono text-[11px]">
                 <Zap className="w-3 h-3 text-amber-500" />
-                <span>{latencyMs}ms</span>
+                <span>Translated in {latencyMs}ms</span>
               </span>
             ) : null}
           </div>
-        </div>
-
-        {/* Main Work Area: Matrix Mode vs Studio Mode */}
-        {mode === 'matrix' ? (
-          <InteractiveMatrix
-            panels={matrixPanels}
-            onPanelTextChange={handleMatrixTextChange}
-            onPanelLangChange={handleMatrixLangChange}
-            onClearPanel={handleClearMatrixPanel}
-            isTranslating={isTranslating}
-            activeSourceId={activeSourceId}
-            fontSize={fontSize}
-            onSelectVocabulary={(item, sentence, targetLang) =>
-              setSelectedVocab({ item, sentence, targetLang })
-            }
-          />
-        ) : (
-          <MultiTargetStudio
-            sourceLang={studioSourceLang}
-            onSourceLangChange={setStudioSourceLang}
-            sourceText={studioSourceText}
-            onSourceTextChange={setStudioSourceText}
-            detectedSourceLang={studioDetectedSource}
-            targetLangs={studioTargetLangs}
-            onAddTargetLang={handleStudioAddTarget}
-            onRemoveTargetLang={handleStudioRemoveTarget}
-            onTargetLangChange={handleStudioTargetChange}
-            results={studioResults}
-            isTranslating={isTranslating}
-            onTranslate={handleStudioTranslate}
-            onClearSource={() => {
-              setStudioSourceText('');
-              setStudioResults({});
-            }}
-            fontSize={fontSize}
-            onSelectVocabulary={(item, sentence, targetLang) =>
-              setSelectedVocab({ item, sentence, targetLang })
-            }
-          />
         )}
+
+        {/* Main Work Area: 3-Panel Tri-Sync Matrix */}
+        <InteractiveMatrix
+          panels={matrixPanels}
+          onPanelTextChange={handleMatrixTextChange}
+          onPanelLangChange={handleMatrixLangChange}
+          onClearPanel={handleClearMatrixPanel}
+          isTranslating={isTranslating}
+          activeSourceId={activeSourceId}
+          fontSize={fontSize}
+          onSelectVocabulary={(item, sentence, targetLang) =>
+            setSelectedVocab({ item, sentence, targetLang })
+          }
+        />
       </main>
 
       {/* Footer */}
