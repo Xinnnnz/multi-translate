@@ -1,0 +1,6 @@
+{
+  "name": "MultiTranslate AI",
+  "description": "Instant multi-target translation powered by Gemini 3.8 Flash, featuring simultaneous dual/multi-target translations, romanization, vocabulary breakdown, and speech audio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
