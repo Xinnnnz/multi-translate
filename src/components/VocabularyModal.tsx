@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, BookOpen, Volume2, Sparkles, Loader2 } from 'lucide-react';
 import { VocabularyItem } from '../types';
 import { speakText } from '../languages';
+import { safeFetchJson } from '../api';
 
 interface VocabularyModalProps {
   item: VocabularyItem | null;
@@ -29,7 +30,7 @@ export const VocabularyModal: React.FC<VocabularyModalProps> = ({
     let isMounted = true;
     setLoading(true);
 
-    fetch('/api/explain-term', {
+    safeFetchJson<{ explanation?: string }>('/api/explain-term', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -38,7 +39,6 @@ export const VocabularyModal: React.FC<VocabularyModalProps> = ({
         targetLang,
       }),
     })
-      .then((res) => res.json())
       .then((data) => {
         if (isMounted) {
           setDeepDive(data.explanation || null);

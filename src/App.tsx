@@ -11,6 +11,7 @@ import { VocabularyModal } from './components/VocabularyModal';
 import { ExportModal } from './components/ExportModal';
 import { HelpModal } from './components/HelpModal';
 import { SUPPORTED_LANGUAGES } from './languages';
+import { safeFetchJson } from './api';
 import {
   HistoryItem,
   TranslationResponse,
@@ -132,7 +133,7 @@ export default function App() {
     const startTime = performance.now();
 
     try {
-      const response = await fetch('/api/translate', {
+      const data = await safeFetchJson<TranslationResponse>('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -142,13 +143,6 @@ export default function App() {
           tone,
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Translation request failed (${response.status})`);
-      }
-
-      const data: TranslationResponse = await response.json();
       const elapsed = Math.round(performance.now() - startTime);
       setLatencyMs(elapsed);
 
